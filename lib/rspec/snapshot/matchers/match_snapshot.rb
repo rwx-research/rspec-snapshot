@@ -57,7 +57,11 @@ module RSpec
 
           @expected = read_snapshot
 
-          @actual == @expected
+          if @wrote
+            false
+          else
+            @actual == @expected
+          end
         end
 
         # === is the method called when matching an argument
@@ -72,6 +76,7 @@ module RSpec
 
         private def write_snapshot
           return unless should_write?
+          @wrote = true
 
           RSpec.configuration.reporter.message(
             "Snapshot written: #{@snapshot_path}"
@@ -82,7 +87,7 @@ module RSpec
         end
 
         private def should_write?
-          update_snapshots? || !File.exist?(@snapshot_path)
+          !File.exist?(@snapshot_path) || (update_snapshots? && read_snapshot != @actual)
         end
 
         private def update_snapshots?
@@ -105,7 +110,11 @@ module RSpec
         end
 
         def failure_message
-          "\nexpected: #{@expected}\n     got: #{@actual}\n"
+          if @wrote
+            "failing because we wrote a snapshot"
+          else
+            "\nexpected: #{@expected}\n     got: #{@actual}\n"
+          end
         end
 
         def failure_message_when_negated
